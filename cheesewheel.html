@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlight's Cheese Wheel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #111827; /* bg-gray-900 */
+        }
+        canvas {
+            display: block;
+            max-width: 100%;
+        }
+        #spinBtn {
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        #spinBtn:active {
+            transform: scale(0.95);
+        }
+        #resultModal {
+            transition: opacity 0.3s ease-in-out;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden">
+
+    <div class="w-full max-w-lg mx-auto text-center">
+        <h1 class="text-4xl md:text-5xl font-bold text-purple-300 mb-2">Starlight's Cheese Wheel</h1>
+        <p class="text-lg text-purple-200 mb-6">Let Starlight decide your cheesy fate!</p>
+
+        <!-- Spinner container, the Star -->
+        <div class="relative w-full max-w-md mx-auto aspect-square flex items-center justify-center mb-12">
+            <svg class="w-12 h-12 text-yellow-300 absolute -top-3 left-1/2 -translate-x-1/2 z-10 rotate-180" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+            </svg>
+            <canvas id="wheelCanvas" width="700" height="700"></canvas>
+        </div>
+
+        <!-- Spin Button -->
+        <button id="spinBtn" class="bg-blue-600 hover:bg-purple-700 text-white font-bold py-4 px-10 rounded-full shadow-lg text-2xl focus:outline-none focus:ring-4 focus:ring-purple-400">
+            Spin!
+        </button>
+    </div>
+    
+    <!-- Result Modal -->
+    <div id="resultModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center opacity-0 pointer-events-none">
+        <div id="modalContent" class="bg-gray-800 border border-purple-500 rounded-2xl shadow-2xl p-8 text-center max-w-sm mx-auto transform scale-90 transition-transform duration-300">
+            <h2 class="text-2xl font-bold mb-4 text-white" id="resultTitle">Starlight chose this cheese!</h2>
+            <img id="resultImage" src="" alt="Selected Cheese" class="w-48 h-48 mx-auto rounded-lg object-cover mb-4">
+            <p class="text-3xl font-bold text-purple-300" id="resultText"></p>
+            <button id="closeModalBtn" class="mt-6 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-full">Spin Again</button>
+        </div>
+    </div>
+
+
+    <script>
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const resultModal = document.getElementById('resultModal');
+        const modalContent = document.getElementById('modalContent');
+        const resultText = document.getElementById('resultText');
+        const resultImage = document.getElementById('resultImage');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        // Cheese options with image URLs
+        const cheeses = [
+            { name: "Cheddar", color: "#FBBF24", image: "https://upload.wikimedia.org/wikipedia/commons/1/18/Somerset-Cheddar.jpg" },
+            { name: "Brie", color: "#FEF3C7", image: "https://upload.wikimedia.org/wikipedia/commons/8/88/Brie_01.jpg" },
+            { name: "Gouda", color: "#F59E0B", image: "https://upload.wikimedia.org/wikipedia/commons/f/fb/Smoked_gouda_cheese.jpg" },
+            { name: "Mozzarella", color: "#FFFFFF", image: "https://upload.wikimedia.org/wikipedia/commons/0/02/Bocconcini_gobeirne.jpg" },
+            { name: "Bleu Cheese", color: "#BFDBFE", image: "https://upload.wikimedia.org/wikipedia/commons/f/f7/WikiCheese_-_Bleu_des_Causses_-_20150619_-_001.jpg" },
+            { name: "Feta", color: "#F3F4F6", image: "https://upload.wikimedia.org/wikipedia/commons/2/28/Feta_Cheese.jpg" },
+            { name: "Swiss", color: "#FEF9C3", image: "https://upload.wikimedia.org/wikipedia/commons/e/ec/NCI_swiss_cheese.jpg" },
+            { name: "Provolone", color: "#FDE68A", image: "https://upload.wikimedia.org/wikipedia/commons/a/a0/Provolone_watermelon_shape.jpg" }
+        ];
+
+        const numSegments = cheeses.length;
+        const arcSize = (2 * Math.PI) / numSegments;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = canvas.width / 2 - 10;
+        
+        let currentAngle = 0;
+        let spinAngleStart = 0;
+        let spinTime = 0;
+        let spinTimeTotal = 0;
+        let isSpinning = false;
+
+        // Preload images
+        const cheeseImages = [];
+        let imagesLoaded = 0;
+        cheeses.forEach(cheese => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous"; // Handle potential CORS issues
+            img.src = cheese.image;
+            img.onload = () => {
+                imagesLoaded++;
+                if (imagesLoaded === cheeses.length) {
+                    drawWheel(); // Draw wheel once all images are loaded
+                }
+            };
+            img.onerror = () => {
+              img.src = `https://placehold.co/100x100/374151/e0e0e0?text=Error`;
+              imagesLoaded++;
+              if (imagesLoaded === cheeses.length) {
+                  drawWheel();
+              }
+            }
+            cheeseImages.push(img);
+        });
+
+        function drawWheel() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#a855f7'; // purple-500
+            ctx.lineWidth = 5;
+            
+            for (let i = 0; i < numSegments; i++) {
+                const angle = i * arcSize;
+                
+                // Draw segment
+                ctx.beginPath();
+                ctx.fillStyle = cheeses[i].color;
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, angle, angle + arcSize);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Draw image
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle + arcSize / 2);
+                
+                const image = cheeseImages[i];
+                const imageSize = radius * 0.4;
+                const imageX = radius * 0.55;
+                const imageY = -imageSize / 2;
+                
+                // Draw image inside a circle clip
+                ctx.beginPath();
+                ctx.arc(imageX + imageSize/2, imageY + imageSize/2, imageSize/2, 0, Math.PI * 2, true);
+                ctx.closePath();
+                ctx.clip();
+                
+                if (image.complete && image.naturalWidth > 0) {
+                   ctx.drawImage(image, imageX, imageY, imageSize, imageSize);
+                }
+                
+                ctx.restore();
+            }
+        }
+        
+        function rotateWheel() {
+            // Apply rotation to the whole canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(currentAngle);
+            ctx.translate(-centerX, -centerY);
+            drawWheel();
+            ctx.restore();
+        }
+
+        function easeOut(t, b, c, d) {
+            t /= d;
+            t--;
+            return c * (t * t * t + 1) + b;
+        }
+
+        function animateSpin() {
+            if (!isSpinning) return;
+            
+            spinTime += 16; // Roughly 60fps
+            if (spinTime >= spinTimeTotal) {
+                stopSpin();
+                return;
+            }
+            
+            const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
+            currentAngle += (spinAngle * Math.PI / 180);
+            rotateWheel();
+            
+            requestAnimationFrame(animateSpin.bind(this));
+        }
+
+        function startSpin() {
+            if (isSpinning) return;
+            isSpinning = true;
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            spinAngleStart = Math.random() * 20 + 10; // Random speed
+            spinTime = 0;
+            spinTimeTotal = Math.random() * 3000 + 4000; // Random duration
+            
+            animateSpin();
+        }
+
+        function stopSpin() {
+            isSpinning = false;
+            spinBtn.disabled = false;
+            spinBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            const winningAngle = ((2 * Math.PI) - (currentAngle % (2 * Math.PI)) + (3 * Math.PI / 2)) % (2 * Math.PI);
+            const winningSegment = Math.floor(winningAngle / arcSize);
+            const winner = cheeses[winningSegment];
+            
+            showResult(winner);
+        }
+        
+        function showResult(winner) {
+            resultText.textContent = winner.name;
+            resultImage.src = winner.image;
+            resultImage.alt = winner.name;
+            
+            resultModal.classList.remove('pointer-events-none', 'opacity-0');
+            modalContent.classList.remove('scale-90');
+        }
+        
+        function hideResult() {
+            resultModal.classList.add('pointer-events-none', 'opacity-0');
+            modalContent.classList.add('scale-90');
+        }
+
+        spinBtn.addEventListener('click', startSpin);
+        closeModalBtn.addEventListener('click', hideResult);
+        resultModal.addEventListener('click', (e) => {
+            if (e.target === resultModal) {
+                hideResult();
+            }
+        });
+
+    </script>
+</body>
+</html>
+
