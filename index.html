@@ -27,15 +27,26 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden">
+<body class="min-h-screen flex flex-col items-center justify-start sm:justify-center p-4 pt-20 sm:pt-4">
+
+    <!-- Tutter Mode Toggle -->
+    <div class="fixed top-4 left-4 z-40 flex items-center space-x-2">
+        <label for="tutterToggle" class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="tutterToggle" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-purple-400 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+        </label>
+        <span class="text-sm font-medium text-purple-200">Tutter Mode</span>
+    </div>
+
     <!-- Starlight Akari Channel Link -->
     <div class="fixed bottom-4 left-4 z-40 flex items-center space-x-3">
-        <a href="https://www.youtube.com/c/starlightakari" target="_blank" rel="noopener noreferrer" class="transition-transform hover:scale-110">
+        <a href="https://www.youtube.com/c/starlightakari" target="_blank" rel="noopener noreferrer" class="relative inline-block transition-transform hover:scale-110">
             <img src="https://yt3.googleusercontent.com/qWpxuhiQ9dvz8KZLU9SSW-h2jt9t2-nAgm5xZtRdizkElHCVhrFDPK8cL_k3qP1cPHdipSKBFg=s900-c-k-c0x00ffffff-no-rj" alt="Starlight Akari Channel" class="w-20 h-20 rounded-full border-2 border-purple-400 shadow-lg">
-            <img src="https://www.clipartmax.com/png/small/221-2210379_bear-in-the-big-blue-house-tutter-bear-in-the-big-blue.png" alt="Tutter on Starlight's head" class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/4 w-10 h-10 object-contain drop-shadow-lg">
+            <img id="tutterOnHead" src="https://www.clipartmax.com/png/small/221-2210379_bear-in-the-big-blue-house-tutter-bear-in-the-big-blue.png" alt="Tutter on Starlight's head" class="absolute top-0 left-0 right-0 mx-auto -translate-y-1/4 w-10 h-10 object-contain drop-shadow-lg hidden">
         </a>
         <p class="text-purple-200 font-semibold text-lg hidden sm:block">Visit her here!</p>
     </div>
+
     <!-- GitHub Credit -->
     <a href="https://github.com/THLPH" target="_blank" rel="noopener noreferrer" class="fixed bottom-4 right-4 z-40 text-purple-300 hover:text-purple-100 transition-colors flex items-center space-x-2 text-sm">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -43,13 +54,13 @@
         </svg>
         <span class="hidden sm:inline">Made by THLPH</span>
     </a>
-    
+
     <div class="w-full max-w-lg mx-auto text-center">
         <h1 class="text-4xl md:text-5xl font-bold text-purple-300 mb-2">Starlight's Cheese Wheel</h1>
         <p class="text-lg text-purple-200 mb-6">Let Starlight decide your cheesy fate!</p>
 
         <!-- Spinner container, the Star -->
-        <div class="relative w-full max-w-md mx-auto aspect-square flex items-center justify-center mb-12">
+        <div class="relative w-full max-w-md mx-auto aspect-square flex items-center justify-center mb-6">
             <svg class="w-12 h-12 text-yellow-300 absolute -top-3 left-1/2 -translate-x-1/2 z-10 rotate-180" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
             </svg>
@@ -57,7 +68,7 @@
         </div>
 
         <!-- Spin Button -->
-        <button id="spinBtn" class="bg-blue-600 hover:bg-purple-700 text-white font-bold py-4 px-10 rounded-full shadow-lg text-2xl focus:outline-none focus:ring-4 focus:ring-purple-400">
+        <button id="spinBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-10 rounded-full shadow-lg text-2xl focus:outline-none focus:ring-4 focus:ring-purple-400">
             Spin!
         </button>
     </div>
@@ -72,6 +83,8 @@
         </div>
     </div>
 
+    <!-- Tutter Popup -->
+    <img id="tutterPopup" src="https://www.clipartmax.com/png/small/221-2210379_bear-in-the-big-blue-house-tutter-bear-in-the-big-blue.png" alt="Tutter" class="fixed w-24 h-24 object-contain drop-shadow-lg z-50 hidden transition-transform duration-300 ease-in-out" style="transform: scale(0);">
 
     <script>
         const canvas = document.getElementById('wheelCanvas');
@@ -82,6 +95,11 @@
         const resultText = document.getElementById('resultText');
         const resultImage = document.getElementById('resultImage');
         const closeModalBtn = document.getElementById('closeModalBtn');
+        const tutterPopup = document.getElementById('tutterPopup');
+        const tutterToggle = document.getElementById('tutterToggle');
+        const tutterOnHead = document.getElementById('tutterOnHead');
+
+        let tutterModeEnabled = false;
 
         // Cheese options with image URLs
         const cheeses = [
@@ -206,6 +224,23 @@
 
         function startSpin() {
             if (isSpinning) return;
+
+            if (tutterModeEnabled) {
+                // Show Tutter at a random position
+                const maxX = window.innerWidth - 96; // 96px is w-24
+                const maxY = window.innerHeight - 96; // 96px is h-24
+                const randomX = Math.random() * maxX;
+                const randomY = Math.random() * maxY;
+
+                tutterPopup.style.left = `${randomX}px`;
+                tutterPopup.style.top = `${randomY}px`;
+                
+                tutterPopup.classList.remove('hidden');
+                setTimeout(() => {
+                    tutterPopup.style.transform = 'scale(1)';
+                }, 10);
+            }
+
             isSpinning = true;
             spinBtn.disabled = true;
             spinBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -225,6 +260,12 @@
             const winningAngle = ((2 * Math.PI) - (currentAngle % (2 * Math.PI)) + (3 * Math.PI / 2)) % (2 * Math.PI);
             const winningSegment = Math.floor(winningAngle / arcSize);
             const winner = cheeses[winningSegment];
+
+            // Hide Tutter
+            tutterPopup.style.transform = 'scale(0)';
+            setTimeout(() => {
+                tutterPopup.classList.add('hidden');
+            }, 300); // Corresponds to transition duration
             
             showResult(winner);
         }
@@ -251,7 +292,17 @@
             }
         });
 
+        tutterToggle.addEventListener('change', () => {
+            tutterModeEnabled = tutterToggle.checked;
+            if (tutterModeEnabled) {
+                tutterOnHead.classList.remove('hidden');
+            } else {
+                tutterOnHead.classList.add('hidden');
+            }
+        });
+
     </script>
 </body>
 </html>
+
 
